@@ -1,61 +1,73 @@
-//Created by :- Ayush Sinha
-//On :- 7-may-2020 @ 16:42 PM
-const express=require('express');
-const bodyParser= require('body-parser') 
-const mongoose=require('mongoose')
-const app = express()
-app.use(bodyParser.urlencoded({extended: true}))
-const {User}= require(__dirname+'/models/user');
+const express = require('express');
+const path = require('path');
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+// const expressValidator = require('express-validator');
+const flash = require('connect-flash');
+const session = require('express-session');
 
-//Index directory
-app.get('/',(req, res)=>{
-    res.sendFile(__dirname + '/template/login.html')
+const passport = require('passport');
+const config = require('./config/database');
+
+mongoose.connect(config.database,{ useUnifiedTopology: true ,useNewUrlParser: true});
+let db = mongoose.connection;
+
+// Check connection
+db.once('open', function(){
+  console.log('Connected to MongoDB');
+});
+
+// Check for DB errors
+db.on('error', function(err){
+  console.log(err);
+});
+
+const app = express();
+
+app.set('views', path.join(__dirname, 'template'));
+app.set('view engine', 'pug');
+
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(session({
+  secret: 'keyboard cat',
+  resave: true,
+  saveUninitialized: true
+}));
+
+app.use(require('connect-flash')());
+app.use(function (req, res, next) {
+  res.locals.messages = require('express-messages')(req, res);
+  next();
+});
+
+require('./config/passport')(passport);
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+app.get('*', function(req, res, next){
+  res.locals.user = req.user || null;
+  next();
+});
+
+app.get('/', (req, res)=>{
+      res.render('login');
+});
+
+app.get('/profile',(req,res)=>{
+    res.render('profile');
 })
 
-//signup
-app.get('/signup', (req, res) => {
-    res.sendFile(__dirname+'/template/signup.html')
-})
+// Route Files
+let users = require('./routes/users');
+app.use('/users', users);
 
-
-app.post('/signup', (req, res) => {
-    //console.log('Hello');
-    let name = req.body.name; 
-    let email =req.body.email; 
-    let password = req.body.password; 
-    let phone =req.body.phone;  
-
-    User.create({
-        name: name, 
-        email:email, 
-        password:password, 
-        phone:phone 
-    },(err,result)=>{
-         err ? console.log(err) : res.render(__dirname+'/template/profile.ejs',{data: result});
-    })
-})
-
-//login
-app.post('/login',(req, res) =>{
-    let email=req.body.email;
-    let password=req.body.password;
-
-    User.findOne({email: email}, (err,result) =>{
-        if(err) res.send(res.send(`<p>Email not registered or incorrrectly entered !!!</p><br>
-                                   <a href="/">Go back to login page</a> OR <a href="/signup">Signup here</a>`))
-        else{
-            console.log(password + " " + result.password);
-            if(password === result.password){
-                res.render(__dirname+'/template/profile.ejs',{data: result});
-            }else{
-                res.send("Incorrect Password Entered !");
-            }
-        }
-    })
-})
-
-//creating server
-const port=3000;
-  app.listen(port, () => {
-     console.log( `Running on port number ${port}..`);
-})
+// Start Server
+let port=3000;
+app.listen(port, ()=>{
+  console.log('Server started on port 3000...');
+});
