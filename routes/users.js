@@ -52,11 +52,14 @@ router.get('/login', function(req, res){
 
 // Login Process
 router.post('/login', function(req, res, next){
-  console.log(req.body.name);
-  passport.authenticate('local', {
-    successRedirect:'/profile',
-    failureRedirect:'/users/login',
-    failureFlash: true
+  console.log(req.body.username);
+  passport.authenticate('local', function(err, user, info) {
+    if (err) { return next(err); }
+    if (!user) { return res.redirect('/users/login'); }
+    req.logIn(user, function(err) {
+      if (err) { return next(err); }
+      return res.render('../template/profile.ejs',{data:req.body.username});
+    });
   })(req, res, next);
 });
 

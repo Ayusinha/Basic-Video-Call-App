@@ -1,0 +1,18 @@
+<h2>Hello <%=data%> , Welocme to your profile!!!</h2> 
+
+<h4>This is an video calling App , which is under progress</h4>
+
+<button><a href="/create/<%=data%>">Create</a></button>
+
+<br>
+
+<form method="POST" action="/join/<%=data%>">
+    <input name="meeting_id" type="text" placeholder="Enter Meeting Id">
+    <button type="submit">Join</button>
+</form>
+
+<br>
+
+<footer>
+    <button><a href="/users/logout">Logout</a></button>
+</footer>
